@@ -1,0 +1,8 @@
+./positive_images/pos08.jpg
+./positive_images/pos01.jpg
+./positive_images/pos05.jpg
+./positive_images/pos02.jpg
+./positive_images/pos07.jpg
+./positive_images/pos04.jpg
+./positive_images/pos06.jpg
+./positive_images/pos03.jpg
