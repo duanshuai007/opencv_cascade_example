@@ -11,6 +11,10 @@
 `https://github.com/mrnugget/opencv-haar-classifier-training`
 - 如何使用`cascade.xml`方面  
 `https://github.com/zeusees/HyperLPR.git`
+- 训练haar级连  
+`https://memememememememe.me/post/training-haar-cascades/`  
+- 将数据集训练为XML文件以进行Cascade分类器OpenCV  
+`https://medium.com/@toshyraf/train-dataset-to-xml-file-for-cascade-classifier-opencv-43a692b74bfe`  
 
 ##主要步骤：
 > 1.Put your positive images in the ./positive_images folder and create a list of them:  
