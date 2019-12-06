@@ -1,24 +1,24 @@
 # The set of languages for which implicit dependencies are needed:
-SET(CMAKE_DEPENDS_LANGUAGES
+set(CMAKE_DEPENDS_LANGUAGES
   "CXX"
   )
 # The set of files for implicit dependencies of each language:
-SET(CMAKE_DEPENDS_CHECK_CXX
-  "/home/duan/test/PlateDetection.cpp" "/home/duan/test/build/CMakeFiles/TEST_Detection.dir/PlateDetection.o"
-  "/home/duan/test/main.cpp" "/home/duan/test/build/CMakeFiles/TEST_Detection.dir/main.o"
+set(CMAKE_DEPENDS_CHECK_CXX
+  "/home/swann/git/opencv_cascade_test01/PlateDetection.cpp" "/home/swann/git/opencv_cascade_test01/build/CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o"
+  "/home/swann/git/opencv_cascade_test01/main.cpp" "/home/swann/git/opencv_cascade_test01/build/CMakeFiles/TEST_Detection.dir/main.cpp.o"
   )
-SET(CMAKE_CXX_COMPILER_ID "GNU")
-
-# Targets to which this target links.
-SET(CMAKE_TARGET_LINKED_INFO_FILES
-  )
+set(CMAKE_CXX_COMPILER_ID "GNU")
 
 # The include file search paths:
-SET(CMAKE_C_TARGET_INCLUDE_PATH
-  "/usr/local/include/opencv"
+set(CMAKE_CXX_TARGET_INCLUDE_PATH
   "/usr/local/include"
+  "/usr/local/include/opencv"
   "../."
   )
-SET(CMAKE_CXX_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})
-SET(CMAKE_Fortran_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})
-SET(CMAKE_ASM_TARGET_INCLUDE_PATH ${CMAKE_C_TARGET_INCLUDE_PATH})
+
+# Targets to which this target links.
+set(CMAKE_TARGET_LINKED_INFO_FILES
+  )
+
+# Fortran module output directory.
+set(CMAKE_Fortran_TARGET_MODULE_DIR "")

@@ -19,26 +19,45 @@ namespace pr{
         cascade.detectMultiScale( processImage, platesRegions, 1.08, 2, cv::CASCADE_SCALE_IMAGE, minSize, maxSize);
         for(auto plate:platesRegions)
         {
-#if 0
-            int zeroadd_w  = static_cast<int>(plate.width * 0.30);
-            int zeroadd_h = static_cast<int>(plate.height * 2);
-            int zeroadd_x = static_cast<int>(plate.width * 0.15);
+#if 1
+            int zeroadd_x = static_cast<int>(plate.width * 0.1);
+            int zeroadd_w  = static_cast<int>(plate.width * 0.3);
             int zeroadd_y = static_cast<int>(plate.height * 1);
+            int zeroadd_h = static_cast<int>(plate.height * 2.4);
 #else       
-            //int zeroadd_x = static_cast<int>(plate.width * 0.14);
-            //int zeroadd_w  = static_cast<int>(plate.width * 0.28);
-            //int zeroadd_y = static_cast<int>(plate.height * 0.15);
-            //int zeroadd_h = static_cast<int>(plate.height * 0.3);
-            int zeroadd_x = 0;
+#if 1
+            int zeroadd_x = static_cast<int>(plate.width * 0.14);
+            int zeroadd_w  = static_cast<int>(plate.width * 0.28);
+            int zeroadd_y = static_cast<int>(plate.height * 0.15);
+            int zeroadd_h = static_cast<int>(plate.height * 0.3);
+#else
+	 		int zeroadd_x = 0;
             int zeroadd_w  = 0;
             int zeroadd_y = 0;
             int zeroadd_h = 0;
+#endif
 #endif
 			plate.x -= zeroadd_x;
             plate.y -= zeroadd_y;
             plate.height += zeroadd_h;
             plate.width += zeroadd_w;
             
+			cv::Mat plateImage = util::cropFromImage(InputImage, plate);
+            PlateInfo plateInfo(plateImage, plate);
+            
+			plateInfos.push_back(plateInfo);
+        }
+    }
+
+	void PlateDetection::plateDetectionLast(cv::Mat InputImage, std::vector<pr::PlateInfo>  &plateInfos){
+        cv::Mat processImage;
+        cv::cvtColor(InputImage, processImage, cv::COLOR_BGR2GRAY);
+        std::vector<cv::Rect> platesRegions;
+		cv::Size minSize(36, 9);
+		cv::Size maxSize(36*40, 9*40);
+        cascade.detectMultiScale( processImage, platesRegions, 1.08, 2, cv::CASCADE_SCALE_IMAGE, minSize, maxSize);
+        for(auto plate:platesRegions)
+        {
 			cv::Mat plateImage = util::cropFromImage(InputImage, plate);
             PlateInfo plateInfo(plateImage, plate);
             

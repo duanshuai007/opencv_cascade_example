@@ -15,6 +15,8 @@ namespace pr{
         PlateDetection();
         void LoadModel(std::string filename_cascade);
         void plateDetectionRough(cv::Mat InputImage,std::vector<pr::PlateInfo>  &plateInfos,int min_w=36,int max_w=800);
+
+		void plateDetectionLast(cv::Mat InputImage,std::vector<pr::PlateInfo>  &plateInfos);
 //      std::vector<pr::PlateInfo> plateDetectionRough(cv::Mat InputImage,int min_w= 60,int max_h = 400);
 //      std::vector<pr::PlateInfo> plateDetectionRoughByMultiScaleEdge(cv::Mat InputImage);
 
