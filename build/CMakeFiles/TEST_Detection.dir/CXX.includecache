@@ -6,18 +6,6 @@
 
 #IncludeRegexTransform: 
 
-.././PlateDetection.h
-opencv2/opencv.hpp
--
-PlateInfo.h
--
-vector
--
-
-.././PlateInfo.h
-opencv2/opencv.hpp
--
-
 /home/swann/git/opencv_cascade_test01/PlateDetection.cpp
 PlateDetection.h
 /home/swann/git/opencv_cascade_test01/PlateDetection.h
@@ -27,16 +15,20 @@ util.h
 /home/swann/git/opencv_cascade_test01/PlateDetection.h
 opencv2/opencv.hpp
 -
-PlateInfo.h
--
 vector
+-
+PlateInfo.h
+/home/swann/git/opencv_cascade_test01/PlateInfo.h
+
+/home/swann/git/opencv_cascade_test01/PlateInfo.h
+opencv2/opencv.hpp
 -
 
 /home/swann/git/opencv_cascade_test01/main.cpp
 iostream
 -
 PlateDetection.h
--
+/home/swann/git/opencv_cascade_test01/PlateDetection.h
 dirent.h
 -
 unistd.h

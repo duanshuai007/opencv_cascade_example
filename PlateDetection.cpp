@@ -41,7 +41,7 @@ namespace pr{
             plate.y -= zeroadd_y;
             plate.height += zeroadd_h;
             plate.width += zeroadd_w;
-            
+			std::cout << "plate rect:" << plate << std::endl; 
 			cv::Mat plateImage = util::cropFromImage(InputImage, plate);
             PlateInfo plateInfo(plateImage, plate);
             
