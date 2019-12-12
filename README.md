@@ -15,6 +15,7 @@
 `https://medium.com/@toshyraf/train-dataset-to-xml-file-for-cascade-classifier-opencv-43a692b74bfe`  
 
 ##主要步骤：
+> 以下步骤都是在文件夹`opencv-haar-classifier-training`中进行  
 > 1.Put your positive images in the ./positive_images folder and create a list of them:  
 >> `find ./positive_images -iname "*.jpg" > positives.txt`
 
