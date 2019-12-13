@@ -2,9 +2,7 @@
 
 > 该测试均在opencv-2.4.9下进行。其中HyperLPR原本需要运行opencv-3.4.0以后版本。    
 > 
-> 本文功能测试均在202服务器的docker内，
->> docker 容器名:mytest  
->> docker image名:platedetect_cv249
+> 本文功能在192.168.200.96的虚拟上进行运行，运行在虚拟机主要是方便查看图片裁剪的结果。
 
 ##本文档主要参考文章：
 - 如何生成`cascade.xml`方面  
@@ -17,6 +15,7 @@
 `https://medium.com/@toshyraf/train-dataset-to-xml-file-for-cascade-classifier-opencv-43a692b74bfe`  
 
 ##主要步骤：
+> 以下步骤都是在文件夹`opencv-haar-classifier-training`中进行  
 > 1.Put your positive images in the ./positive_images folder and create a list of them:  
 >> `find ./positive_images -iname "*.jpg" > positives.txt`
 
