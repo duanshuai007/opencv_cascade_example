@@ -5,9 +5,13 @@
 #include <unistd.h>
 #include <stdio.h>
 #include <fstream>
+#include <algorithm>
 
 using namespace cv;
 using namespace std;
+
+Mat gSrcImage;
+Mat gTarImage;
 
 //车牌宽高比为520/110=4.727272左右，误差不超过40%
 //车牌高度范围在15~125之间，视摄像头距离而定（图像大小）
@@ -124,6 +128,9 @@ double getDistance (cv::Point2f pointO, cv::Point2f pointA)
 	return distance;
 }
 
+/*
+ *	获得输入四个顶点的顺序，将输出的四个顶点按照输入四个顶点的顺序进行排列
+ */
 void getPoint2f(cv::Point2f srcPoint[], cv::Point2f dstPoint[], int *pPointArray, Rect &rect)
 {
 	//根据输入的四边形端点坐标来确认四个点的顺序
@@ -213,12 +220,10 @@ void getPoint2f(cv::Point2f srcPoint[], cv::Point2f dstPoint[], int *pPointArray
 	
 	if (count >= 2) {
 		//右侧抬起的四边形，thisPoint 相当于下边框的左侧点
-		//printf("this point is left down, num=%d\n", num);
 		recttype = 1;
 		downleft = num;
 	} else {
 		//左侧抬起的四边形，thisPoint 相当于下边框的右侧点
-		//printf("this point is right down, num=%d\n", num);
 		recttype = 2;
 		downright = num;
 	}
@@ -235,10 +240,8 @@ void getPoint2f(cv::Point2f srcPoint[], cv::Point2f dstPoint[], int *pPointArray
 
 	//这里根据结果总结出已使用的点只有两种组合，1-3,0-2.所以找未使用的点就可以用已使用的点相加再除2
 	if (recttype == 1) {
-		//printf("up right point:%d\n", num);
 		upright = num;
 	} else if (recttype == 2) {
-		//printf("up left point:%d\n", num);
 		upleft = num;
 	}
 	
@@ -283,7 +286,13 @@ END_OK:
 	pPointArray[3] = downleft;
 }
   
-
+/*
+ *	图像进行坐标变换，目的是减少图片的倾斜角度，目前不能保证图像完全变成平行的图，主要是跟前面步骤检测到的车牌外接矩形是不是准确有关系
+ *	参数1:输入的图像，原始3通道图像
+ *	参数2:返回的图像，相位变换后的图像
+ *	参数3:输入图像中检测到的车牌外接最小四边形的四个顶点
+ *	参数4:返回的区域信息，保存了车牌的实际大小.
+ */
 bool changeToRectangular(cv::Mat &srcImage, cv::Mat &dstImage, cv::Point2f srcPoint[], Rect &rect)
 {
 	cv::Point2f dstPoint[4];
@@ -294,12 +303,16 @@ bool changeToRectangular(cv::Mat &srcImage, cv::Mat &dstImage, cv::Point2f srcPo
 	const float error = 0.5;
 	const float scale_min = defaultscale - defaultscale * error;
 	const float scale_max = defaultscale + defaultscale * error;
-	//输入矩形四个端点，输出按照矩形四个端点顺序生成的新端点(160x50)，如果输入是
+	
 	getPoint2f(srcPoint, dstPoint, PointArray, rect);
 
-	printf("Point array:%d %d %d %d\n", PointArray[0], PointArray[1], PointArray[2], PointArray[3]);
-	cout << "rect:" << rect << endl;
-	//对输入的四个点进行重新定位，在二值图上找到准确的四边形而不总是矩形。
+	//printf("Point array:%d %d %d %d\n", PointArray[0], PointArray[1], PointArray[2], PointArray[3]);
+	//cout << "rect:" << rect << endl;
+	//printf("srcPoint: p0=%.0f,%.0f p1=%.0f,%.0f p2=%.0f,%.0f p3=%.0f,%.0f\n", srcPoint[0].x, srcPoint[0].y, srcPoint[1].x, srcPoint[1].y,
+	//		srcPoint[2].x, srcPoint[2].y, srcPoint[3].x, srcPoint[3].y);
+	//printf("dstPoint: p0=%.0f,%.0f p1=%.0f,%.0f p2=%.0f,%.0f p3=%.0f,%.0f\n", dstPoint[0].x, dstPoint[0].y, dstPoint[1].x, dstPoint[1].y,
+	//		dstPoint[2].x, dstPoint[2].y, dstPoint[3].x, dstPoint[3].y);
+#if 0
 	cv::Point2f PointLeftDown;
 	cv::Point2f PointLeftUP;
 	cv::Point2f PointRightUP;
@@ -323,11 +336,12 @@ bool changeToRectangular(cv::Mat &srcImage, cv::Mat &dstImage, cv::Point2f srcPo
 	cout << "rows:" << rows << " cols:" << cols << " scale:" << scale << endl;
 	if (scale < scale_min || scale > scale_max) 
 		return false;
-
-	dstImage = cv::Mat(rect.height, rect.width, CV_8UC3);
+#endif
+	scale =  (float)rect.width / (float)rect.height;
+	if (scale > 6.5 || scale < 2.0)
+		return false;
 
 	cv::Mat warpMatrix = getPerspectiveTransform(srcPoint, dstPoint);
-
 	warpPerspective(srcImage, dstImage, warpMatrix, dstImage.size(), INTER_LINEAR, BORDER_CONSTANT);
 	
 	return true;
@@ -385,6 +399,11 @@ int getPlateColor(cv::Mat &srcImage)
 	return 0;
 }
 
+/*
+ *	检测车牌的外接最小矩形的四个顶点是否在图片范围内,如果在图片区域外，那就是出错误了。
+ *	参数1:外接最小四边形的四个顶点
+ *	参数2，3: 通过cascade检测到的车牌区域图的宽与高.
+ */
 bool checkRectVaild(cv::Point2f p[], int width, int height)
 {
 	int tempw, temph;
@@ -463,13 +482,13 @@ float getRowPixelScale(cv::Mat &srcBinaryImage, int row)
 	return (float)sum / (float)srcBinaryImage.cols;;
 }
 
-float getColPixelScale(cv::Mat &srcBinaryImage, int col)
+float getColPixelScale(cv::Mat &srcBinaryImage, int startrow, int endrow, int col)
 {
 	int sum = 0;
-	for (int i = 0; i < srcBinaryImage.rows; i++) {
+	for (int i = startrow; i < endrow; i++) {
 		sum += srcBinaryImage.at<uchar>(i, col) / 0xff;
 	}
-	return (float)sum / (float)srcBinaryImage.rows;
+	return (float)sum / (float)(endrow - startrow);
 }
 
 float getImagePixelScale(cv::Mat &srcImage)
@@ -482,7 +501,7 @@ float getImagePixelScale(cv::Mat &srcImage)
 	}
 	return (float)sum / (float)(srcImage.rows * srcImage.cols);
 }
-
+//获取指定的两列之间的像素占有率
 float getImageSomeColPixelScale(cv::Mat &srcImage, int colstart, int colend)
 {
 	int sum = 0;
@@ -494,7 +513,33 @@ float getImageSomeColPixelScale(cv::Mat &srcImage, int colstart, int colend)
 
 	return (float)sum / (float)(srcImage.rows * (colend - colstart));
 }
+//获取指定行的连续像素的长度
+int getImageColContinuePixel(cv::Mat &srcImage, int row)
+{
+	int sum = 0;
+	int val;
+	unsigned char ch;
+	vector<int> intvec;
+	for (int i = 0; i < srcImage.cols; i++) {
+		ch = srcImage.at<uchar>(row, i);
+		if (0xff == ch) {
+			sum++;
+		} else {
+			if (sum > 5) { 
+				intvec.push_back(sum);
+			}
+			sum = 0;
+		}
+	}
+	sum = 0;
+	for (int i = 0; i < intvec.size(); i++) {
+		val = intvec.at(i);
+		if (sum < val)
+			sum = val;
+	}
 
+	return sum;
+}
 int getImageMinScaleColCount(cv::Mat &srcImage)
 {
 	int i, j;
@@ -507,7 +552,7 @@ int getImageMinScaleColCount(cv::Mat &srcImage)
 	while (1) {
 		count = 0;
 		for (i = 0; i < srcImage.cols; i++) {
-			scale = getColPixelScale(srcImage, i);
+			scale = getColPixelScale(srcImage, 0, srcImage.rows, i);
 			if (findhead == false) {
 				if (scale < minScale) {
 					findhead = true;
@@ -532,6 +577,10 @@ int getImageMinScaleColCount(cv::Mat &srcImage)
 	return count;
 }
 
+/*
+ *		切除车牌二值图的上下空白部分
+ *
+ */
 bool cutUpDownSpace(cv::Mat &srcBinaryImage, cv::Mat &dstBinaryImage)
 {
 	int i;
@@ -542,9 +591,10 @@ bool cutUpDownSpace(cv::Mat &srcBinaryImage, cv::Mat &dstBinaryImage)
 	float minScale;
 	float upMinScale = 0.2;
 	float downMinScale = 0.2;
-	//找到上面1/3总行数最小的那行
-	cout << "===> start cutdownup image" << endl;
+	const float rowPixelMaxScale = 6.5;
 	
+	//step1: 按照像素占用率进行过滤
+	//找到上面1/3总行数最小的那行
 	upMinScale = 0.2;
 	while (1) {
 		up = 0;
@@ -555,13 +605,13 @@ bool cutUpDownSpace(cv::Mat &srcBinaryImage, cv::Mat &dstBinaryImage)
 			}
 		}
 		if (up == 0)
-			upMinScale += 0.1;
-		else 
+			upMinScale += 0.05;
+		else
 			break;
-		if (upMinScale == 0.4) 
-			return false;
+
+		if (upMinScale == 0.3) 
+			break;
 	}
-	cout << "===> cutUpDownSpace: upscale:" << minScale << endl;
 	//找到下面1/3总行数的最小那行
 	downMinScale = 0.2;
 	while(1) {
@@ -573,216 +623,347 @@ bool cutUpDownSpace(cv::Mat &srcBinaryImage, cv::Mat &dstBinaryImage)
 			}
 		}
 		if (down == 0)
-			downMinScale += 0.1;
+			downMinScale += 0.05;
 		else
 			break;
-		if (downMinScale == 0.4) 
+
+		if (downMinScale == 0.3) 
+			break;
+	}
+	//step2: 按照每行的连续像素的行进行过滤
+	scale = (float)(srcBinaryImage.cols) / (float)(down - up);
+	if (scale > rowPixelMaxScale) {
+		for (i = 0; i < (srcBinaryImage.rows / 2); i++) {
+			int count = getImageColContinuePixel(srcBinaryImage, i);
+			if (count > (srcBinaryImage.cols / 6)) {
+				up = i;
+			}
+		}
+		up++;
+
+		for (i = srcBinaryImage.rows  - 1; i > (srcBinaryImage.rows / 2); i--) {
+			int count = getImageColContinuePixel(srcBinaryImage, i);
+			if (count > (srcBinaryImage.cols / 6)) {
+				down = i;
+			}
+		}
+		down--;
+
+		scale = (float)(srcBinaryImage.cols) / (float)(down - up);
+		if (scale > rowPixelMaxScale) {
+			cout << __func__ << " failed, exit" << endl;
 			return false;
+		}
 	}
 
-	scale = (float)(srcBinaryImage.cols) / (float)(down - up);
-	if (scale > 7)
-		return false;
+	int left, right;
+	//清除左边的空白部分
+	for (i = 0; i < srcBinaryImage.cols / 4; i++) {
+		scale = getColPixelScale(srcBinaryImage, up, down, i);
+		if (scale > 0.05)
+			break;
+	}
+	left = i - 1;
+	if (left < 0)
+		left = 0;
+	//清除右边的空白部分	
+	for (i = srcBinaryImage.cols - 1; i > srcBinaryImage.cols * (0.8); i--) {
+		scale = getColPixelScale(srcBinaryImage, up, down, i);
+		if (scale > 0.05)
+			break;
+	}
+	right = i + 1;
+	if (right  > srcBinaryImage.cols)
+		right = srcBinaryImage.cols;
 
-	printf("cutUpDownSpace OK, scale=%f\n", scale);
-	rect.x = 0;
+	cout << __func__ << "up:" << up << " down:" << down << endl;
+	cout << __func__ << "cutUpDownSpace OK, scale=" << scale << endl;
+
+	rect.x = left;
 	rect.y = up;
-	rect.width = srcBinaryImage.cols;
+	rect.width = right - left;
 	rect.height = down - up;
 	srcBinaryImage(rect).copyTo(dstBinaryImage);
+	gSrcImage(rect).copyTo(gTarImage);	
 	
 	return true;
 }
 
-#define TYPE_OTHER	1
-#define TYPE_ONE	2
-typedef struct __PlateCharImageStruct {
-	int type;
-	Rect rect;
-} PlateImage;
-
-int getPlateChar(cv::Mat &srcThreshImg, vector<Mat> &imgvec)
+int getPlateChar(cv::Mat &srcThreshImg, vector<Rect> &vRect)
 {
-	static int imagenum = 0;
+	static int siImageNum = 0;
 	int i, j;
 	char imgName[64];
 	int width, height;
-	int lastPos;
-	int charImgCount;
 	float scale;
 	float minScale;
 	height = srcThreshImg.rows;
 	width = height / 2;
-	vector<PlateImage> vRect;
+	vector<int> vSpaceJumpEdge;
+	bool findSpace;
 
-	cout << "getPlateChar:src image w=" << srcThreshImg.cols << " h=" << srcThreshImg.rows << endl;
-	cout << "getPlateChar:dst image w=" << width << " h=" << height << endl;
+	cout << __func__ << "src image w=" << srcThreshImg.cols << " h=" << srcThreshImg.rows << endl;
+	cout << __func__ << "dst image w=" << width << " h=" << height << endl;
 
+	siImageNum++;
+	memset(imgName, 0, sizeof(imgName));
+	snprintf(imgName, sizeof(imgName), "thresh_updown_%d.jpg", siImageNum);
+	cv::imwrite(imgName, srcThreshImg);	
 	minScale = 0.05;
-	while (1) {
-		lastPos = 0;
-		charImgCount = 0;
-		int charnum = 0;
-		vRect.clear();
-		for (i = 0; i < srcThreshImg.cols; i++ ) {
-			
-			if (i >= srcThreshImg.cols)
-				break;
-
-			scale = getColPixelScale(srcThreshImg, i);
-			if (scale < minScale) {
-				if (((i - lastPos) >= (width * 0.8)) && ((i - lastPos) < (width * 1.6))) {
-					//如果是倾斜图像L因为L的下横线处的像素比率是一样的，所以就取像素比率发生变化的地方作为分割点
-					for (j = i; j < i + width; j++) {
-						scale = getColPixelScale(srcThreshImg, j);
-						if (scale < (minScale / 2) || scale > 2*minScale)
-							break;
-					}
-					i = j;
-
-					PlateImage pi;
-					pi.rect = Rect(lastPos, 0, (i - lastPos), height);
-					pi.type = TYPE_OTHER;
-					//Rect r = Rect(lastPos, 0, (i - lastPos), height);
-					vRect.push_back(pi);
-					charImgCount++;
-					charnum++;
-				} else if (((i - lastPos) > (width / 5)) && ((i - lastPos) < ((width / 3) * 2))) {
-					//针对字符是1的情况
-					//如果检测到的是“.”字符则跳过去
-					//后五个字符的第一位如果是1，则判断左边边界的距离是不是大于3倍宽度，小于的话则是检测到了连接符"."
-					scale = getImageSomeColPixelScale(srcThreshImg, lastPos, i);
-					if (scale < 0.2) { //用来过滤车牌中间的那个点，点如果被检测到，她所在到行像素占用率不会超过这个值(估算),如果设置过大，可能会导致倾斜图像中的1和L被过滤
-						lastPos = i;
-						continue;
-					}
-
-					int left = lastPos - (width / 3);
-
-					for (j = lastPos; j > left; j++) {
-						scale = getColPixelScale(srcThreshImg, j);
-						if (scale > minScale)
-							break;
-					}
-					left = j;
-					int right = left + width;
-
-					if (right >= srcThreshImg.cols) {
-						right = srcThreshImg.cols;
-						//如果“1”是最后一个字符,这个宽度也要在一定范围内
-						//if (right - left < width / 2) {
-						//	break;
-						//}
-					}
-
-					for (j = i; j < right; j++) {
-						scale = getColPixelScale(srcThreshImg, j);
-						//找到下一字符的开始位置
-						if (scale > minScale)
-							break;
-					}
-					right = j;
-					//如果是倾斜图像L因为L的下横线处的像素比率是一样的，所以就取像素比率发生变化的地方作为分割点
-					for (j = right; j < right + (width/3); j++) {
-						scale = getColPixelScale(srcThreshImg, j);
-						if (scale < (minScale / 2) || scale > 2*minScale)
-							break;
-					}
-					right = j - 1;
-
-					//过滤尾部的干扰图
-					//if ((right - left) < (width * 0.8))
-					//	break;
-
-					PlateImage pi;
-					pi.rect = Rect(left, 0, (right - left), height);
-					pi.type = TYPE_ONE;
-					vRect.push_back(pi);
-					charImgCount++;
-					charnum++;
+	//step1: 找出所有的小于inScale的跳变沿
+	while(1) {
+		findSpace = false;
+		for ( i = 0; i < srcThreshImg.cols; i++) {
+			scale = getColPixelScale(srcThreshImg, 0, srcThreshImg.rows, i);
+			if (false == findSpace) {
+				if (scale < minScale) {
+					findSpace = true;
 				}
-				
-				if (charnum >= 10) {
-					break;
+			} else {
+				if (scale > minScale) {
+					findSpace = false;
+					if(vSpaceJumpEdge.size() > 0) {
+						int val = vSpaceJumpEdge.at(vSpaceJumpEdge.size() - 1);
+						if ( abs(i - val) > 0)
+							vSpaceJumpEdge.push_back(i);
+					} else {
+						vSpaceJumpEdge.push_back(i);
+					}
 				}
-
-				lastPos = i;
+			}
+		}	
+		findSpace = false;
+		for ( i = 0; i < srcThreshImg.cols; i++) {
+			scale = getColPixelScale(srcThreshImg, 0, srcThreshImg.rows, i);
+			if (false == findSpace) {
+				if (scale > minScale) {
+					findSpace = true;
+				}
+			} else {
+				if (scale < minScale) {
+					findSpace = false;
+					if(vSpaceJumpEdge.size() > 0) {
+						int val = vSpaceJumpEdge.at(vSpaceJumpEdge.size() - 1);
+						if ( abs(i - val) > 0)
+							vSpaceJumpEdge.push_back(i);
+					} else {
+						vSpaceJumpEdge.push_back(i);
+					}
+				}
 			}
 		}
-
-		imagenum++;
-
-		if (charImgCount < 7)
+		//cout << "minScale:" << minScale << endl;
+		if (vSpaceJumpEdge.size() < 10 || vSpaceJumpEdge.size() > 25) {
 			minScale += 0.01;
-		else
+			cout << "find edge:" << vSpaceJumpEdge.size() << " ,minScale:" << minScale << endl;
+			vSpaceJumpEdge.clear();
+		} else {
 			break;
-
-		if (minScale >= 0.2)
-			break;
+		}
+		if (minScale >= 0.2) {
+			cout << "===> not find vaild space edge!" << endl;
+			return 0;
+		}
 	}
 
-	if (charImgCount >= 7) {
-		width = 0;
-		for (i = 0; i < vRect.size(); i++) {
-			PlateImage pi = vRect.at(i);
-			width += pi.rect.width;
-		}
 
-		width = (width / vRect.size()) + 1;
+	cout << "=======> step 1 done, find edge:" << vSpaceJumpEdge.size() << endl;
+
+	//step2: get every char rect	
+	sort(vSpaceJumpEdge.begin(), vSpaceJumpEdge.end());
+	//save image to show
+	for (i = 0; i < vSpaceJumpEdge.size(); i++) {
+		Point p1, p2;
+		int val = vSpaceJumpEdge.at(i);
+		p1.x = val;
+		p1.y = 0;
+		p2.x = val;
+		p2.y = srcThreshImg.rows;
+		line(gTarImage, p1, p2, Scalar(0, 0, 255), 1);
+	}
+	memset(imgName, 0, sizeof(imgName));
+	snprintf(imgName, sizeof(imgName), "thresh_line%d.jpg", siImageNum);
+	imwrite(imgName, gTarImage);
+	//show end
+	int curPos, nextPos;
+	vector<Rect> vTmpRect;
+	//head	
+	curPos = vSpaceJumpEdge.at(0);
+	if ( curPos > width * 0.8) {
+		scale = getImageSomeColPixelScale(srcThreshImg, 0, curPos);
+		if (scale > 0.2 && scale < 0.6) {
+			Rect r = Rect(0, curPos, curPos, srcThreshImg.rows);
+			vTmpRect.push_back(r);
+		}
+	}
+	//middle
+	for (i = 0; i < vSpaceJumpEdge.size() - 1; i++) {
+		curPos = vSpaceJumpEdge.at(i);
+		nextPos = vSpaceJumpEdge.at(i + 1);
+
+		if ((nextPos - curPos) < 3)
+			continue;
 		
-		for (i = 0; i < vRect.size(); i++) {
-			Mat tmpMat;
-			PlateImage pi = vRect.at(i);
-			if (pi.rect.width > width) {
-				if (pi.type == TYPE_ONE) {
-					//如果是1,则向左侧移动窗口
-					//for( j = pi.rect.x + pi.rect.width - 1; j > pi.rect.x; j--) {
-					//	scale = getColPixelScale(srcThreshImg, j);
-					//	if (scale < minScale)
-					//		break;
-					//}
-					//pi.rect.x = j - width;
-					//pi.rect.width = width;
-				} else {
-					//否则，向右侧移动窗口
-					//for ( j = pi.rect.x; j < pi.rect.x + pi.rect.width - 1; j++) {
-					//	scale = getColPixelScale(srcThreshImg, j);
-					//	if (scale > minScale)
-					//		break;
-					//}
-					pi.rect.x += (pi.rect.width - width);
-					pi.rect.width = width;
+		scale = getImageSomeColPixelScale(srcThreshImg, curPos, nextPos);
+		//if (scale < 0.2 || scale > 0.9)
+		if (scale < 0.2)
+			continue;
+
+		//if (width < (nextPos - curPos))
+		//	width =  (nextPos - curPos);
+		Rect r = Rect(curPos, 0, nextPos - curPos, srcThreshImg.rows);
+		vTmpRect.push_back(r);
+	}
+	//tail
+	curPos = vSpaceJumpEdge.at(vSpaceJumpEdge.size() - 1);
+	if (srcThreshImg.cols - curPos > (width * 0.8)) {
+		scale = getImageSomeColPixelScale(srcThreshImg, curPos, srcThreshImg.cols);
+		if (scale > 0.2 && scale < 0.6) {
+			Rect r = Rect(curPos, 0, (srcThreshImg.cols - curPos - 1), srcThreshImg.rows);
+			vTmpRect.push_back(r);
+		}
+	}
+	cout << "=======> step 2 done" << endl;
+	//step2.5:
+	//对vRect中的所有单元进行检测，解决字符粘连的问题
+	float minScaleCheck;
+	for (i = 0; i < vTmpRect.size(); i++) {
+		Rect r = vTmpRect.at(i);
+		if (r.width > (width * 1.6)) {
+			int offset = 0;
+			int left, right;
+			minScaleCheck = minScale + 0.05;
+			while (1) {
+				left = r.x + offset + width * 0.5;
+				right = r.x + offset + width * 1.5;
+				if (right > srcThreshImg.cols)
+					right = srcThreshImg.cols;
+				if (left >= right)
+					break;
+				cout << "left:" << left << " right:" << right << endl;
+				sleep(0.1);
+				for (j = left; j < right; j++) {
+					scale = getColPixelScale(srcThreshImg, 0, srcThreshImg.rows - 0, j);
+					if (scale < minScaleCheck) {
+						break;
+					}
 				}
-			} else {	//图像宽度小于平均的宽度，可能是1的图像
-				pi.rect.x -= (width - pi.rect.width);
-				pi.rect.width = width;
+				right = j;
+				if (((right - left) > (width * 0.8))  && ((right - left) < (width * 1.6))) {
+					if (j > (r.x + r.width) * 0.9)
+						break;
+					else {
+						offset += right - left;
+						Rect r = Rect(left, 0, right - left, srcThreshImg.rows);
+						vRect.push_back(r);
+					}
+				} else {
+					minScaleCheck += 0.05;
+				}
 			}
+			r.width = j - r.x;
+		} else {
+			vRect.push_back(r);
+		}
+	}
+	cout << "======> step2.5 done" << endl;
+	//step3:
+	cout << "rect size:" << vRect.size() << endl;
+	if (vRect.size() < 7 || vRect.size() > 10)
+		return 0;
+	int resultnum = 0;
+	cout << "vRect.size: "  << vRect.size() << endl;
+	for (i = 0; i < vRect.size(); i++) {
+		Rect r = vRect.at(i);
+		if (i == 0) {	//head
+			int left, right;
+			left = r.x - width / 2;
+			if (left < 0)
+				left = 0;
+			right = r.x + r.width + width / 2;
 			
-			if (pi.rect.width + pi.rect.x >= srcThreshImg.cols) 
-				pi.rect.width = srcThreshImg.cols - pi.rect.x;
+			for (j = r.x; j > left; j--) {
+				scale = getColPixelScale(srcThreshImg, 0, srcThreshImg.rows, j);
+				if (scale > minScale)
+					break;
+			}
+			r.x = j;
+
+			for (j = r.x + r.width; j < right; j++) {
+				scale = getColPixelScale(srcThreshImg, 0, srcThreshImg.rows, j);
+				if (scale > minScale)
+					break;
+			}
+			right = j;
+			if (right - r.x < width * 0.8)
+				continue;
+			scale = getImageSomeColPixelScale(srcThreshImg, r.x, right);
+			if (scale < 0.2 || scale > 0.6)
+				continue;
+			r.width = right - r.x;
+		} else if (i != vRect.size() - 1) { //middle
+			if (r.width < width) {
+				r.x -= (width - r.width) / 2;
+				if (r.x < 0)
+					r.x = 0;
+				r.width = width;
+			}
+		} else { //tail
+			//最后一个"字符"(可能也不是字符而是被认为是字符的干扰图行)
+			//判断左右边沿
+			int left = r.x - width / 2;
+			if (left < 0)
+				left = 0;
+			for (j = r.x; j > r.x - width / 2; j--) {
+				scale = getColPixelScale(srcThreshImg, 0, srcThreshImg.rows, j);
+				if (scale > minScale)
+					break;
+			}
+			r.x = j;
 			
-			if (pi.rect.x < 0)
+			int right =  r.x + r.width + width / 2;
+			if (right >= srcThreshImg.cols) 
+				right = srcThreshImg.cols;
+			if (right - r.x < width * 0.8)
 				continue;
 
-			cout << "rect:" << pi.rect << endl;
-			srcThreshImg(pi.rect).copyTo(tmpMat);
-			memset(imgName, 0, sizeof(imgName));
-			snprintf(imgName, sizeof(imgName), "charimg_%02d_%02d_%f.jpg", imagenum, i, minScale);
-			cv::imwrite(imgName, tmpMat);
+			for (j = r.x + r.width; j < right; j++) {
+				scale = getColPixelScale(srcThreshImg, 0, srcThreshImg.rows, j);
+				if (scale > minScale)
+					break;
+			}
+			right = j;
+			if (right - r.x < width * 0.8)
+				continue;
+			scale = getImageSomeColPixelScale(srcThreshImg, r.x, right);
+			if (scale < 0.2 || scale > 0.6)
+				continue;
+			r.width = right - r.x;
 		}
+
+		cout << "rect:" << r << endl;
+		Mat tmpMat;
+		srcThreshImg(r).copyTo(tmpMat);
+		memset(imgName, 0, sizeof(imgName));
+		snprintf(imgName, sizeof(imgName), "thresh_line_%d_%d.jpg", siImageNum, i);
+		imwrite(imgName, tmpMat);
+		resultnum++;
 	}
 
-	cout << "getPlateChar:minScale=" << minScale << " charImgCount=" << charImgCount << endl;
+	cout << "=======> step 3 done" << endl;
 
-	return charImgCount;
+	return resultnum;
 }
 
+/*
+ *	车牌检测
+ */
 bool checkIsVaildPlateImage(cv::Mat &srcImage, int color, char *namebody)
 {
 	char imgName[64];
 	cv::Mat grayImg, threshImg;
 	cv::Mat updownImg;
-	vector<Mat> plateCharVector;
+	vector<Rect> vRect;
 	int num;
 
 	cvtColor(srcImage, grayImg, COLOR_BGR2GRAY);
@@ -795,29 +976,21 @@ bool checkIsVaildPlateImage(cv::Mat &srcImage, int color, char *namebody)
 	} else { 
 		return false;
 	}
-
-	memset(imgName, 0, sizeof(imgName));
-	snprintf(imgName, sizeof(imgName), "%s_%s.jpg", namebody, "thresh");
-	cv::imwrite(imgName, threshImg);
+	gSrcImage = srcImage.clone();
 
 	if (cutUpDownSpace(threshImg, updownImg) == true) {
 		
+		memset(imgName, 0, sizeof(imgName));
+		snprintf(imgName, sizeof(imgName), "%s_%s.jpg", namebody, "thresh");
+		cv::imwrite(imgName, threshImg);
+
 		float scale = getImagePixelScale(updownImg);
-		if (scale < 0.25 || scale > 0.45) {
+		if (scale < 0.15 || scale > 0.45) {
 			cout << "checkIsVaildPlateImage:getImagePixelScale=" << scale << " ,error and return" << endl;
 			return false;
 		}
-		
-		num = getImageMinScaleColCount(updownImg); 
-		if (num < 6) {
-			return false;
-		}
 
-		memset(imgName, 0, sizeof(imgName));
-		snprintf(imgName, sizeof(imgName), "%s_%s_%.2f.jpg", namebody, "updown", scale);
-		cv::imwrite(imgName, updownImg);	
-		
-		num = getPlateChar(updownImg, plateCharVector);
+		num = getPlateChar(updownImg, vRect);
 		if(num == 7) {
 			cout << "getPlateChar OK! normal car plate" << endl;
 			return true;
@@ -843,7 +1016,7 @@ int main(int argc, char *argv[])
 
 	int num = 0;
 	bool rotate_flag;
-	char cascaName[64] = {0};
+	char picName[64] = {0};
 	int plateColor;
 	float newscale;
 	cv::Mat srcImage;
@@ -891,19 +1064,20 @@ int main(int argc, char *argv[])
 	std::vector<pr::PlateInfo> plates;
 	plateDetection.plateDetectionRough(colorCropImage, plates);
 
+	cout << "============= Start Decteted ==============" << endl;
 	for(pr::PlateInfo platex:plates)
 	{
+		cout << "----------------- PlateChar Start Dected -------------------" << endl;
 		srcImage = platex.getPlateImage();
-		memset(cascaName, 0, sizeof(cascaName));
-		snprintf(cascaName, sizeof(cascaName), "plate_src%02d.jpg", num);
-		cv::imwrite(cascaName, srcImage);
-	
-		printf("plateinfo image w=%d h=%d\n", srcImage.cols, srcImage.rows);
-		
+		memset(picName, 0, sizeof(picName));
+		snprintf(picName, sizeof(picName), "plate_src%02d.jpg", num);
+		cv::imwrite(picName, srcImage);
+		cout << "------> PlateImage origin w=" << srcImage.cols << ",h=" << srcImage.rows << endl;
 		plateColor = getPlateColor(srcImage);
-		printf("color = %d\n", plateColor);
+		cout << "------> PlateImage color =" << plateColor << endl;
 		cv::Mat realPlate, hsvMat;
-		cv::cvtColor(srcImage, hsvMat, COLOR_BGR2HSV);
+		
+		cvtColor(srcImage, hsvMat, COLOR_BGR2HSV);
 	
 		if (plateColor == 1) {
 			HMin = 100;
@@ -915,16 +1089,18 @@ int main(int argc, char *argv[])
 			HMin = 0;
 			HMax = 255;
 		} else {
-			cout << "plate color error" << endl;
+			cout << "------> PlateImage color error, continue next PlateImage" << endl;
 			continue;
 		}
 
-		cout << "------------------start S --------------" << endl;
+		cout << "------> start S add" << endl;
 		while (SMin < 180)  {
 			cv::inRange(hsvMat, Scalar(HMin, SMin, VMin), Scalar(255, 255, 255), realPlate);
-			//memset(cascaName, 0, sizeof(cascaName));
-			//snprintf(cascaName, sizeof(cascaName), "plate_inrange%02d_%d.jpg", num, SMin);
-			//cv::imwrite(cascaName, realPlate);
+#if 0
+			memset(picName, 0, sizeof(picName));
+			snprintf(picName, sizeof(picName), "plate_S_inrange%02d_%d.jpg", num, SMin);
+			cv::imwrite(picName, realPlate);
+#endif
 			vector<vector<Point>> contours;
 			findContours(realPlate, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
 			//绘制边框图并保存
@@ -932,13 +1108,13 @@ int main(int argc, char *argv[])
 				//checkApproxPolyDPIsValid(srcImage, contours, i);
 				RotatedRect mr = minAreaRect(contours[i]); //返回每个轮廓的最小有界矩形区域
 				if(verifySizes_closeImg(mr)) { //判断矩形轮廓是否符合要求
-					printf("---------------- find %d, minrect rotate:%f------------------\n", i, mr.angle);
+					cout << "------> find" << i << ", minrect rotate:" << mr.angle << endl;
 					//判断外接四边形是否超出图片的区域
 					cv::Point2f p[4];
 					mr.points(p);
 					bool rectflag = checkRectVaild(p, srcImage.cols, srcImage.rows);
 					if (!rectflag) {
-						cout << "checkRectVaild failed" << endl;
+						cout << "------> checkRectVaild failed, next contours" << endl;
 						break;
 					}
 #if 0
@@ -947,19 +1123,19 @@ int main(int argc, char *argv[])
 					line(LineImg, p[1], p[2], Scalar(0, 0, 255), 2);
 					line(LineImg, p[2], p[3], Scalar(0, 0, 255), 2);
 					line(LineImg, p[3], p[0], Scalar(0, 0, 255), 2);
-					memset(cascaName, 0, sizeof(cascaName)); 
-					sprintf(cascaName, "line_%d_%d_%d.jpg", num, i, SMin);
-					cv::imwrite(cascaName, LineImg);
+					memset(picName, 0, sizeof(picName)); 
+					sprintf(picName, "lineS_%d_%d_%d.jpg", num, i, SMin);
+					cv::imwrite(picName, LineImg);
 #endif
 					cv::Mat resultMat;
 					Rect rect;
+					//printf("before changeToRectangular: p0:%.0f,%.0f p1:%.0f,%.0f p2:%.0f,%.0f p3:%.0f,%.0f\n",
+					//		p[0].x, p[0].y,  p[1].x, p[1].y, p[2].x, p[2].y, p[3].x, p[3].y);
 					bool bRet = changeToRectangular(srcImage, resultMat, p, rect);
 					if (bRet) {
-						cout << "changeToRectangular OK" << endl;
-						cout << "rect:" << rect << endl;
+						cout << "------> changeToRectangular OK" << endl;
 						cv::Mat lastMat;
 						char namebody[64];
-						//Rect rect = Rect(0, 0, 160, 50);
 						resultMat(rect).copyTo(lastMat);
 						memset(namebody, 0, sizeof(namebody));
 						snprintf(namebody, sizeof(namebody), "plate_up_%d_%d_%d", num, i, SMin);
@@ -974,41 +1150,45 @@ int main(int argc, char *argv[])
 
 		SMin = 0;
 		VMin = 0;
-		cout << "------------------start V--------------" << endl;
+		cout << "------> start V add" << endl;
 		while (VMin < 200) {
 			cv::inRange(hsvMat, Scalar(HMin, SMin, VMin), Scalar(255, 255, 255), realPlate);
+#if 0
+			memset(picName, 0, sizeof(picName));
+			snprintf(picName, sizeof(picName), "plate_V_inrange%02d_%d.jpg", num, VMin);
+			cv::imwrite(picName, realPlate);
+#endif
 			vector<vector<Point> > contours;
 			findContours(realPlate, contours, CV_RETR_LIST, CV_CHAIN_APPROX_SIMPLE);
-			//cout << "find contours:" << contours.size() << endl;
 			for (int  i = 0; i < contours.size(); i++) {
 				//checkApproxPolyDPIsValid(srcImage, contours, i);
 				RotatedRect mr = minAreaRect(contours[i]); //返回每个轮廓的最小有界矩形区域
 				if(verifySizes_closeImg(mr)) {
-					printf("---------------- find %d, minrect rotate:%f------------------\n", i, mr.angle);
+					cout << "------> find" << i << ", minrect rotate:" << mr.angle << endl;
 					//判断外接四边形是否超出图片的区域
 					cv::Point2f p[4];
 					mr.points(p);
 					bool rectflag = checkRectVaild(p, srcImage.cols, srcImage.rows);
-					if (!rectflag)
+					if (!rectflag) {
+						cout << "------> checkRectVaild failed, next contours" << endl;
 						break;
+					}
 #if 0
 					line(srcImage, p[0], p[1], Scalar(0, 0, 255), 2);
 					line(srcImage, p[1], p[2], Scalar(0, 0, 255), 2);
 					line(srcImage, p[2], p[3], Scalar(0, 0, 255), 2);
 					line(srcImage, p[3], p[0], Scalar(0, 0, 255), 2);
-					memset(cascaName, 0, sizeof(cascaName)); 
-					sprintf(cascaName, "2line_%d_%d_%d.jpg", num, i, VMin);
-					cv::imwrite(cascaName, srcImage);
+					memset(picName, 0, sizeof(picName)); 
+					sprintf(picName, "lineV_%d_%d_%d.jpg", num, i, VMin);
+					cv::imwrite(picName, srcImage);
 #endif
 					cv::Mat resultMat;
 					Rect rect;
 					bool bRet = changeToRectangular(srcImage, resultMat, p, rect);
 					if (bRet) {
-						cout << "changeToRectangular OK" << endl;
-						cout << "rect:" << rect << endl;
+						cout << "------> changeToRectangular OK" << endl;
 						cv::Mat lastMat;
 						char namebody[64];
-						//Rect rect = Rect(0, 0, 160, 50);
 						resultMat(rect).copyTo(lastMat);
 						memset(namebody, 0, sizeof(namebody));
 						snprintf(namebody, sizeof(namebody), "plate_down_%d_%d_%d", num, i, SMin);

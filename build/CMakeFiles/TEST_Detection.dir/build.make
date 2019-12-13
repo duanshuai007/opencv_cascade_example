@@ -43,10 +43,10 @@ RM = /home/swann/cmake-3.6.0-Linux-x86_64/bin/cmake -E remove -f
 EQUALS = =
 
 # The top-level source directory on which CMake was run.
-CMAKE_SOURCE_DIR = /home/swann/git/opencv_cascade_test01
+CMAKE_SOURCE_DIR = /home/swann/git/opencv_cascade_test03
 
 # The top-level build directory on which CMake was run.
-CMAKE_BINARY_DIR = /home/swann/git/opencv_cascade_test01/build
+CMAKE_BINARY_DIR = /home/swann/git/opencv_cascade_test03/build
 
 # Include any dependencies generated for this target.
 include CMakeFiles/TEST_Detection.dir/depend.make
@@ -59,16 +59,16 @@ include CMakeFiles/TEST_Detection.dir/flags.make
 
 CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o: CMakeFiles/TEST_Detection.dir/flags.make
 CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o: ../PlateDetection.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/swann/git/opencv_cascade_test01/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o -c /home/swann/git/opencv_cascade_test01/PlateDetection.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/swann/git/opencv_cascade_test03/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_1) "Building CXX object CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o"
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o -c /home/swann/git/opencv_cascade_test03/PlateDetection.cpp
 
 CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/swann/git/opencv_cascade_test01/PlateDetection.cpp > CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.i
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/swann/git/opencv_cascade_test03/PlateDetection.cpp > CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.i
 
 CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/swann/git/opencv_cascade_test01/PlateDetection.cpp -o CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.s
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/swann/git/opencv_cascade_test03/PlateDetection.cpp -o CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.s
 
 CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o.requires:
 
@@ -83,16 +83,16 @@ CMakeFiles/TEST_Detection.dir/PlateDetection.cpp.o.provides.build: CMakeFiles/TE
 
 CMakeFiles/TEST_Detection.dir/main.cpp.o: CMakeFiles/TEST_Detection.dir/flags.make
 CMakeFiles/TEST_Detection.dir/main.cpp.o: ../main.cpp
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/swann/git/opencv_cascade_test01/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/TEST_Detection.dir/main.cpp.o"
-	/usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/TEST_Detection.dir/main.cpp.o -c /home/swann/git/opencv_cascade_test01/main.cpp
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --progress-dir=/home/swann/git/opencv_cascade_test03/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_2) "Building CXX object CMakeFiles/TEST_Detection.dir/main.cpp.o"
+	/usr/bin/c++   $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -o CMakeFiles/TEST_Detection.dir/main.cpp.o -c /home/swann/git/opencv_cascade_test03/main.cpp
 
 CMakeFiles/TEST_Detection.dir/main.cpp.i: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Preprocessing CXX source to CMakeFiles/TEST_Detection.dir/main.cpp.i"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/swann/git/opencv_cascade_test01/main.cpp > CMakeFiles/TEST_Detection.dir/main.cpp.i
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -E /home/swann/git/opencv_cascade_test03/main.cpp > CMakeFiles/TEST_Detection.dir/main.cpp.i
 
 CMakeFiles/TEST_Detection.dir/main.cpp.s: cmake_force
 	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green "Compiling CXX source to assembly CMakeFiles/TEST_Detection.dir/main.cpp.s"
-	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/swann/git/opencv_cascade_test01/main.cpp -o CMakeFiles/TEST_Detection.dir/main.cpp.s
+	/usr/bin/c++  $(CXX_DEFINES) $(CXX_INCLUDES) $(CXX_FLAGS) -S /home/swann/git/opencv_cascade_test03/main.cpp -o CMakeFiles/TEST_Detection.dir/main.cpp.s
 
 CMakeFiles/TEST_Detection.dir/main.cpp.o.requires:
 
@@ -135,7 +135,7 @@ TEST_Detection_EXTERNAL_OBJECTS =
 ../TEST_Detection: /usr/local/lib/libopencv_imgproc.so.3.4.0
 ../TEST_Detection: /usr/local/lib/libopencv_core.so.3.4.0
 ../TEST_Detection: CMakeFiles/TEST_Detection.dir/link.txt
-	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/swann/git/opencv_cascade_test01/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable ../TEST_Detection"
+	@$(CMAKE_COMMAND) -E cmake_echo_color --switch=$(COLOR) --green --bold --progress-dir=/home/swann/git/opencv_cascade_test03/build/CMakeFiles --progress-num=$(CMAKE_PROGRESS_3) "Linking CXX executable ../TEST_Detection"
 	$(CMAKE_COMMAND) -E cmake_link_script CMakeFiles/TEST_Detection.dir/link.txt --verbose=$(VERBOSE)
 
 # Rule to build all files generated by this target.
@@ -153,6 +153,6 @@ CMakeFiles/TEST_Detection.dir/clean:
 .PHONY : CMakeFiles/TEST_Detection.dir/clean
 
 CMakeFiles/TEST_Detection.dir/depend:
-	cd /home/swann/git/opencv_cascade_test01/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/swann/git/opencv_cascade_test01 /home/swann/git/opencv_cascade_test01 /home/swann/git/opencv_cascade_test01/build /home/swann/git/opencv_cascade_test01/build /home/swann/git/opencv_cascade_test01/build/CMakeFiles/TEST_Detection.dir/DependInfo.cmake --color=$(COLOR)
+	cd /home/swann/git/opencv_cascade_test03/build && $(CMAKE_COMMAND) -E cmake_depends "Unix Makefiles" /home/swann/git/opencv_cascade_test03 /home/swann/git/opencv_cascade_test03 /home/swann/git/opencv_cascade_test03/build /home/swann/git/opencv_cascade_test03/build /home/swann/git/opencv_cascade_test03/build/CMakeFiles/TEST_Detection.dir/DependInfo.cmake --color=$(COLOR)
 .PHONY : CMakeFiles/TEST_Detection.dir/depend
 
